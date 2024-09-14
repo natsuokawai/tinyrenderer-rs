@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 use std::fs::File;
 use std::io::{self, Read, Write};
 
@@ -22,10 +20,12 @@ struct TGAHeader {
 #[derive(Clone, Copy, Debug)]
 pub struct TGAColor {
     pub raw: [u8; 4],
+    #[allow(dead_code)]
     pub bytespp: usize,
 }
 
 impl TGAColor {
+    #[allow(dead_code)]
     pub fn new() -> TGAColor {
         TGAColor {
             raw: [0, 0, 0, 0],
@@ -40,6 +40,7 @@ impl TGAColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_slice(p: &[u8], bpp: usize) -> TGAColor {
         let mut raw = [0u8; 4];
         raw[..bpp].copy_from_slice(&p[..bpp]);
@@ -49,8 +50,10 @@ impl TGAColor {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Format {
+    #[allow(dead_code)]
     Grayscale = 1,
     RGB = 3,
+    #[allow(dead_code)]
     RGBA = 4,
 }
 
@@ -73,6 +76,7 @@ impl TGAImage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn read_tga_file(&mut self, filename: &str) -> io::Result<()> {
         let mut file = File::open(filename)?;
         let mut header = TGAHeader {
@@ -133,6 +137,7 @@ impl TGAImage {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn load_rle_data(&mut self, file: &mut File) -> io::Result<()> {
         let pixelcount = (self.width * self.height) as usize;
         let mut currentpixel = 0;
@@ -275,6 +280,7 @@ impl TGAImage {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get(&self, x: i32, y: i32) -> Option<TGAColor> {
         if x < 0 || y < 0 || x >= self.width || y >= self.height {
             return None;
@@ -295,6 +301,7 @@ impl TGAImage {
         true
     }
 
+    #[allow(dead_code)]
     pub fn flip_horizontally(&mut self) -> bool {
         if self.data.is_empty() {
             return false;
@@ -333,10 +340,12 @@ impl TGAImage {
         true
     }
 
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.data.fill(0);
     }
 
+    #[allow(dead_code)]
     pub fn scale(&mut self, w: i32, h: i32) -> bool {
         if w <= 0 || h <= 0 || self.data.is_empty() {
             return false;
@@ -373,8 +382,6 @@ impl TGAImage {
 
                 let dest_start = nscanline - nlinebytes;
                 let dest_end = nscanline;
-                let src_start = nscanline - nlinebytes;
-                let src_end = nscanline;
 
                 let (before, after) = tdata.split_at_mut(dest_end);
                 let dest = &mut before[dest_start..dest_end];

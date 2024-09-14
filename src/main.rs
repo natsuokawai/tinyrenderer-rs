@@ -1,14 +1,17 @@
+mod geometry;
+mod model;
+mod renderer;
 mod tgaimage;
-use tgaimage::{Format, TGAColor, TGAImage};
+
+use model::Model;
+use renderer::Renderer;
 
 fn main() {
-    //let white = TGAColor::rgba(255, 255, 255, 255);
-    let red = TGAColor::rgba(255, 0, 0, 255);
+    let width = 800;
+    let height = 800;
+    let model = Model::new("src/obj/african_head.obj");
 
-    let mut image = TGAImage::new(100, 100, Format::RGB);
-    image.set(52, 41, &red);
-    image.flip_vertically();
-    image
-        .write_tga_file("output.tga", true)
-        .expect("Failed to write TGA file");
+    let mut renderer = Renderer::new(width, height, renderer::OptimizationLevel::Level0);
+    renderer.render_model(&model);
+    renderer.save_tga_image("output.tga");
 }
