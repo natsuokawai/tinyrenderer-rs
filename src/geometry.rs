@@ -11,7 +11,6 @@ impl<T> Vec2<T>
 where
     T: Copy + Default,
 {
-    #[allow(dead_code)]
     pub fn new(x: T, y: T) -> Self {
         Vec2 { x, y }
     }
@@ -182,7 +181,6 @@ where
 
 #[allow(dead_code)]
 pub type Vec2f = Vec2<f32>;
-#[allow(dead_code)]
 pub type Vec2i = Vec2<i32>;
 pub type Vec3f = Vec3<f32>;
 #[allow(dead_code)]
