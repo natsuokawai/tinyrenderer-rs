@@ -77,7 +77,7 @@ impl Renderer {
             OptimizationLevel::Level0 => {
                 for x in x0..=x1 {
                     let t = (x - x0) as f32 / (x1 - x0) as f32;
-                    let y = y0 as f32 * (1.0 - t) + y1 as f32 * t;
+                    let y = y0 as f32 + t * (y1 - y0) as f32;
                     if steep {
                         image.set(y as i32, x, color);
                     } else {
@@ -123,6 +123,46 @@ impl Renderer {
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_draw_line() {
+        let width = 10;
+        let height = 5;
+        let c = &TGAColor::rgba(128, 1, 255, 255);
+
+        struct TestCase<'a> {
+            optimization_level: OptimizationLevel,
+            filename: &'a str,
+        }
+        for test in vec![
+            TestCase {
+                optimization_level: OptimizationLevel::Level0,
+                filename: "tests/images/line0.tga",
+            },
+            TestCase {
+                optimization_level: OptimizationLevel::Level1,
+                filename: "tests/images/line1.tga",
+            },
+            TestCase {
+                optimization_level: OptimizationLevel::Level2,
+                filename: "tests/images/line2.tga",
+            },
+        ] {
+            let mut renderer = Renderer::new(width, height, test.optimization_level);
+            renderer.draw_line(Vec2i::new(0, 0), Vec2i::new(8, 5), c);
+
+            let mut testimage = TGAImage::new(width, height, Format::RGB);
+            testimage.read_tga_file(test.filename).unwrap();
+            testimage.flip_vertically();
+
+            assert_eq!(renderer.image.data, testimage.data);
         }
     }
 }
