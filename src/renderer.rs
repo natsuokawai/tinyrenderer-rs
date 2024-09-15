@@ -54,6 +54,40 @@ impl Renderer {
         }
     }
 
+    pub fn draw_triangle(&mut self, t0_: Vec2i, t1_: Vec2i, t2_: Vec2i, color: &TGAColor) {
+        let image = &mut self.image;
+        let mut vs = vec![t0_, t1_, t2_];
+        vs.sort_by(|a, b| a.y.cmp(&b.y));
+        let t0 = vs[0];
+        let t1 = vs[1];
+        let t2 = vs[2];
+
+        let a01 = (t1.y - t0.y) as f32 / (t1.x - t0.x) as f32;
+        let a12 = (t2.y - t1.y) as f32 / (t2.x - t1.x) as f32;
+        let a02 = (t2.y - t0.y) as f32 / (t2.x - t0.x) as f32;
+
+        // The equation y = a * (x - p) + q solved for x.
+        let calc_x = |y: f32, a: f32, p: f32, q: f32| (y + a * p - q) / a;
+
+        for y in t0.y..=t2.y {
+            let mut left_x: f32;
+            let mut right_x: f32;
+            if y < t1.y {
+                left_x = calc_x(y as f32, a02, t0.x as f32, t0.y as f32);
+                right_x = calc_x(y as f32, a01, t0.x as f32, t0.y as f32);
+            } else {
+                left_x = calc_x(y as f32, a02, t0.x as f32, t0.y as f32);
+                right_x = calc_x(y as f32, a12, t1.x as f32, t1.y as f32);
+            }
+            if left_x > right_x {
+                std::mem::swap(&mut left_x, &mut right_x);
+            }
+            for x in (left_x as i32)..=(right_x as i32) {
+                image.set(x, y, color);
+            }
+        }
+    }
+
     pub fn draw_line(&mut self, t0: Vec2i, t1: Vec2i, color: &TGAColor) {
         let image = &mut self.image;
         let mut steep = false;
