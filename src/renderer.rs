@@ -52,6 +52,41 @@ impl Renderer {
         }
     }
 
+    pub fn render_model2(&mut self, model: &crate::model::Model) {
+        let light_dir = Vec3f::new(0.0, 0.0, -1.0);
+
+        for i in 0..model.nfaces() {
+            let face = model.face(i);
+            let mut screen_coords = vec![Vec2i::new(0, 0); 3];
+            let mut world_coords = vec![Vec3f::new(0.0, 0.0, 0.0); 3];
+            for j in 0..3 {
+                let v = model.vert(face[j]);
+                screen_coords[j] = Vec2i::new(
+                    ((v.x + 1.0) * self.width as f32 / 2.0) as i32,
+                    ((v.y + 1.0) * self.height as f32 / 2.0) as i32,
+                );
+                world_coords[j] = v;
+            }
+            let mut n =
+                (world_coords[2] - world_coords[0]).cross(world_coords[1] - world_coords[0]);
+            n.normalize(1.0);
+            let intensity = n.dot(light_dir);
+            if intensity > 0.0 {
+                self.draw_triangle(
+                    screen_coords[0],
+                    screen_coords[1],
+                    screen_coords[2],
+                    &TGAColor::rgba(
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                        255,
+                    ),
+                );
+            }
+        }
+    }
+
     pub fn draw_triangle(&mut self, t0: Vec2i, t1: Vec2i, t2: Vec2i, color: &TGAColor) {
         let image = &mut self.image;
 
