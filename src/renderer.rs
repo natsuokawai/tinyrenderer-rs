@@ -1,5 +1,5 @@
 use crate::{
-    geometry::Vec2i,
+    geometry::{Vec2i, Vec3f, Vec3i},
     tgaimage::{Format, TGAColor, TGAImage},
 };
 
@@ -52,38 +52,39 @@ impl Renderer {
         }
     }
 
-    pub fn draw_triangle(&mut self, t0_: Vec2i, t1_: Vec2i, t2_: Vec2i, color: &TGAColor) {
+    pub fn draw_triangle(&mut self, t0: Vec2i, t1: Vec2i, t2: Vec2i, color: &TGAColor) {
         let image = &mut self.image;
-        let mut vs = vec![t0_, t1_, t2_];
-        vs.sort_by(|a, b| a.y.cmp(&b.y));
-        let t0 = vs[0];
-        let t1 = vs[1];
-        let t2 = vs[2];
 
-        let a01 = (t1.y - t0.y) as f32 / (t1.x - t0.x) as f32;
-        let a12 = (t2.y - t1.y) as f32 / (t2.x - t1.x) as f32;
-        let a02 = (t2.y - t0.y) as f32 / (t2.x - t0.x) as f32;
+        let bbox_min_x = *vec![t0.x, t1.x, t2.x].iter().min().unwrap();
+        let bbox_max_x = *vec![t0.x, t1.x, t2.x].iter().max().unwrap();
+        let bbox_min_y = *vec![t0.y, t1.y, t2.y].iter().min().unwrap();
+        let bbox_max_y = *vec![t0.y, t1.y, t2.y].iter().max().unwrap();
 
-        // The equation y = a * (x - p) + q solved for x.
-        let calc_x = |y: f32, a: f32, p: f32, q: f32| (y + a * p - q) / a;
-
-        for y in t0.y..=t2.y {
-            let mut left_x: f32;
-            let mut right_x: f32;
-            if y < t1.y {
-                left_x = calc_x(y as f32, a02, t0.x as f32, t0.y as f32);
-                right_x = calc_x(y as f32, a01, t0.x as f32, t0.y as f32);
-            } else {
-                left_x = calc_x(y as f32, a02, t0.x as f32, t0.y as f32);
-                right_x = calc_x(y as f32, a12, t1.x as f32, t1.y as f32);
-            }
-            if left_x > right_x {
-                std::mem::swap(&mut left_x, &mut right_x);
-            }
-            for x in (left_x as i32)..=(right_x as i32) {
+        for x in bbox_min_x..=bbox_max_x {
+            for y in bbox_min_y..=bbox_max_y {
+                let bc = Self::barycentric(t0, t1, t2, Vec2i::new(x, y));
+                if bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0 {
+                    continue;
+                }
                 image.set(x, y, color);
             }
         }
+    }
+
+    fn barycentric(a: Vec2i, b: Vec2i, c: Vec2i, p: Vec2i) -> Vec3f {
+        let u = Vec3i::new(b.x - a.x, c.x - a.x, a.x - p.x).cross(Vec3i::new(
+            b.y - a.y,
+            c.y - a.y,
+            a.y - p.y,
+        ));
+        if u.z.abs() < 1 {
+            return Vec3f::new(-1.0, 1.0, 1.0);
+        }
+        Vec3f::new(
+            1.0 - (u.x + u.y) as f32 / u.z as f32,
+            u.y as f32 / u.z as f32,
+            u.x as f32 / u.z as f32,
+        )
     }
 
     pub fn draw_line(
