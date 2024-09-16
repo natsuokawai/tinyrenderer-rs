@@ -7,7 +7,6 @@ pub struct Renderer {
     width: i32,
     height: i32,
     image: TGAImage,
-    optimization_level: OptimizationLevel,
 }
 
 #[allow(dead_code)]
@@ -18,13 +17,12 @@ pub enum OptimizationLevel {
 }
 
 impl Renderer {
-    pub fn new(width: i32, height: i32, optimization_level: OptimizationLevel) -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         let image = TGAImage::new(width, height, Format::RGB);
         Renderer {
             width,
             height,
             image,
-            optimization_level,
         }
     }
 
@@ -49,7 +47,7 @@ impl Renderer {
                 let y1 = (v1.y + 1.0) * self.height as f32 / 2.0;
                 let t0 = Vec2i::new(x0 as i32, y0 as i32);
                 let t1 = Vec2i::new(x1 as i32, y1 as i32);
-                self.draw_line(t0, t1, &white);
+                self.draw_line(t0, t1, &white, OptimizationLevel::Level0);
             }
         }
     }
@@ -88,7 +86,13 @@ impl Renderer {
         }
     }
 
-    pub fn draw_line(&mut self, t0: Vec2i, t1: Vec2i, color: &TGAColor) {
+    pub fn draw_line(
+        &mut self,
+        t0: Vec2i,
+        t1: Vec2i,
+        color: &TGAColor,
+        optimization_level: OptimizationLevel,
+    ) {
         let image = &mut self.image;
         let mut steep = false;
         let mut x0 = t0.x;
@@ -107,7 +111,7 @@ impl Renderer {
             std::mem::swap(&mut y0, &mut y1);
         }
 
-        match self.optimization_level {
+        match optimization_level {
             OptimizationLevel::Level0 => {
                 for x in x0..=x1 {
                     let t = (x - x0) as f32 / (x1 - x0) as f32;
@@ -189,8 +193,13 @@ mod tests {
                 filename: "tests/images/line2.tga",
             },
         ] {
-            let mut renderer = Renderer::new(width, height, test.optimization_level);
-            renderer.draw_line(Vec2i::new(0, 0), Vec2i::new(8, 5), c);
+            let mut renderer = Renderer::new(width, height);
+            renderer.draw_line(
+                Vec2i::new(0, 0),
+                Vec2i::new(8, 5),
+                c,
+                test.optimization_level,
+            );
 
             let mut testimage = TGAImage::new(width, height, Format::RGB);
             testimage.read_tga_file(test.filename).unwrap();

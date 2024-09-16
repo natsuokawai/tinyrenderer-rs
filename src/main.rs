@@ -13,11 +13,11 @@ fn main() {
     let height = 800;
     let model = Model::new("src/obj/african_head.obj");
 
-    let mut renderer = Renderer::new(width, height, renderer::OptimizationLevel::Level0);
+    let mut renderer = Renderer::new(width, height);
     renderer.render_model(&model);
     renderer.save_tga_image("output.tga");
 
-    let mut triangle_renderer = Renderer::new(200, 200, renderer::OptimizationLevel::Level0);
+    let mut triangle_renderer = Renderer::new(200, 200);
     triangle_renderer.draw_triangle(
         Vec2i::new(10, 70),
         Vec2i::new(50, 160),
