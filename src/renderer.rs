@@ -90,10 +90,10 @@ impl Renderer {
     pub fn draw_triangle(&mut self, t0: Vec2i, t1: Vec2i, t2: Vec2i, color: &TGAColor) {
         let image = &mut self.image;
 
-        let bbox_min_x = *vec![t0.x, t1.x, t2.x].iter().min().unwrap();
-        let bbox_max_x = *vec![t0.x, t1.x, t2.x].iter().max().unwrap();
-        let bbox_min_y = *vec![t0.y, t1.y, t2.y].iter().min().unwrap();
-        let bbox_max_y = *vec![t0.y, t1.y, t2.y].iter().max().unwrap();
+        let bbox_min_x = std::cmp::max(0, *vec![t0.x, t1.x, t2.x].iter().min().unwrap());
+        let bbox_max_x = std::cmp::min(image.width, *vec![t0.x, t1.x, t2.x].iter().max().unwrap());
+        let bbox_min_y = std::cmp::max(0, *vec![t0.y, t1.y, t2.y].iter().min().unwrap());
+        let bbox_max_y = std::cmp::min(image.height, *vec![t0.y, t1.y, t2.y].iter().max().unwrap());
 
         for x in bbox_min_x..=bbox_max_x {
             for y in bbox_min_y..=bbox_max_y {
