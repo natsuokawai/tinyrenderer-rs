@@ -54,16 +54,21 @@ impl Renderer {
 
     pub fn render_model2(&mut self, model: &crate::model::Model) {
         let light_dir = Vec3f::new(0.0, 0.0, -1.0);
+        let mut zbuffer = vec![
+            vec![i32::min_value(); self.image.width as usize + 1];
+            self.image.height as usize + 1
+        ];
 
         for i in 0..model.nfaces() {
             let face = model.face(i);
-            let mut screen_coords = vec![Vec2i::new(0, 0); 3];
+            let mut screen_coords = vec![Vec3i::new(0, 0, 0); 3];
             let mut world_coords = vec![Vec3f::new(0.0, 0.0, 0.0); 3];
             for j in 0..3 {
                 let v = model.vert(face[j]);
-                screen_coords[j] = Vec2i::new(
+                screen_coords[j] = Vec3i::new(
                     ((v.x + 1.0) * self.width as f32 / 2.0) as i32,
                     ((v.y + 1.0) * self.height as f32 / 2.0) as i32,
+                    v.z as i32,
                 );
                 world_coords[j] = v;
             }
@@ -72,7 +77,7 @@ impl Renderer {
             n.normalize(1.0);
             let intensity = n.dot(light_dir);
             if intensity > 0.0 {
-                self.draw_triangle(
+                self.draw_triangle_with_zbuffer(
                     screen_coords[0],
                     screen_coords[1],
                     screen_coords[2],
@@ -82,12 +87,20 @@ impl Renderer {
                         (intensity * 255.0) as u8,
                         255,
                     ),
+                    &mut zbuffer,
                 );
             }
         }
     }
 
-    pub fn draw_triangle(&mut self, t0: Vec2i, t1: Vec2i, t2: Vec2i, color: &TGAColor) {
+    pub fn draw_triangle_with_zbuffer(
+        &mut self,
+        t0: Vec3i,
+        t1: Vec3i,
+        t2: Vec3i,
+        color: &TGAColor,
+        zbuffer: &mut Vec<Vec<i32>>,
+    ) {
         let image = &mut self.image;
 
         let bbox_min_x = std::cmp::max(0, *vec![t0.x, t1.x, t2.x].iter().min().unwrap());
@@ -97,11 +110,20 @@ impl Renderer {
 
         for x in bbox_min_x..=bbox_max_x {
             for y in bbox_min_y..=bbox_max_y {
-                let bc = Self::barycentric(t0, t1, t2, Vec2i::new(x, y));
+                let bc = Self::barycentric(
+                    Vec2i::new(t0.x, t0.y),
+                    Vec2i::new(t1.x, t1.y),
+                    Vec2i::new(t2.x, t2.y),
+                    Vec2i::new(x, y),
+                );
                 if bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0 {
                     continue;
                 }
-                image.set(x, y, color);
+                let z = t0.x * bc.x as i32 + t1.y * bc.y as i32 + t2.z * bc.z as i32;
+                if z > zbuffer[x as usize][y as usize] {
+                    zbuffer[x as usize][y as usize] = z;
+                    image.set(x, y, color);
+                }
             }
         }
     }
