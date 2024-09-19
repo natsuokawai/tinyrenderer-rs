@@ -10,46 +10,46 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(filename: &str) -> Self {
+    pub fn new(filename: &str) -> Result<Self, String> {
         let mut verts: Vec<Vec3f> = Vec::new();
         let mut faces: Vec<Vec<usize>> = Vec::new();
 
-        let file = File::open(&Path::new(filename)).expect("Failed to open file");
+        let Ok(file) = File::open(&Path::new(filename)) else {
+            return Err("Failed to open file".to_string());
+        };
         let reader = BufReader::new(file);
 
         for line_result in reader.lines() {
-            if let Ok(line) = line_result {
-                if line.starts_with("v ") {
-                    let mut parts = line[2..].split_whitespace();
-                    let x: f32 = parts.next().unwrap().parse().unwrap();
-                    let y: f32 = parts.next().unwrap().parse().unwrap();
-                    let z: f32 = parts.next().unwrap().parse().unwrap();
-                    verts.push(Vec3f::new(x, y, z));
-                } else if line.starts_with("f ") {
-                    let mut face = Vec::new();
-                    let parts = line[2..].split_whitespace();
-                    for part in parts {
-                        let indices: Vec<&str> = part.split('/').collect();
-                        if !indices.is_empty() {
-                            if let Ok(v_idx) = indices[0].parse::<usize>() {
-                                face.push(v_idx - 1); // OBJ index starts from 1
-                            } else {
-                                eprintln!("Failed to parse vertex index: {}", indices[0]);
-                                continue;
-                            }
+            let line = match line_result {
+                Ok(line) => line,
+                Err(e) => return Err(e.to_string()),
+            };
+            if line.starts_with("v ") {
+                let mut parts = line[2..].split_whitespace();
+                let x: f32 = parts.next().unwrap().parse().unwrap();
+                let y: f32 = parts.next().unwrap().parse().unwrap();
+                let z: f32 = parts.next().unwrap().parse().unwrap();
+                verts.push(Vec3f::new(x, y, z));
+            } else if line.starts_with("f ") {
+                let mut face = Vec::new();
+                let parts = line[2..].split_whitespace();
+                for part in parts {
+                    let indices: Vec<&str> = part.split('/').collect();
+                    if !indices.is_empty() {
+                        if let Ok(v_idx) = indices[0].parse::<usize>() {
+                            face.push(v_idx - 1); // OBJ index starts from 1
                         } else {
-                            eprintln!("No vertex index found in part: {}", part);
-                            continue;
+                            return Err(format!("Failed to parse vertex index: {}", indices[0]));
                         }
+                    } else {
+                        return Err(format!("No vertex index found in part: {}", part));
                     }
-                    faces.push(face);
                 }
+                faces.push(face);
             }
         }
 
-        eprintln!("# v# {} f# {}", verts.len(), faces.len());
-
-        Model { verts, faces }
+        Ok(Model { verts, faces })
     }
 
     #[allow(dead_code)]

@@ -26,11 +26,9 @@ impl Renderer {
         }
     }
 
-    pub fn save_tga_image(&mut self, filename: &str) {
+    pub fn save_tga_image(&mut self, filename: &str) -> std::io::Result<()> {
         self.image.flip_vertically();
-        self.image
-            .write_tga_file(filename, true)
-            .expect("Failed to write TGA file");
+        self.image.write_tga_file(filename, true)
     }
 
     pub fn render_model(&mut self, model: &crate::model::Model) {
