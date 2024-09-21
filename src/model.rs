@@ -11,7 +11,7 @@ pub struct Model {
     uvs: Vec<Vec2f>,
     #[allow(dead_code)]
     normals: Vec<Vec3f>,
-    faces: Vec<Vec<usize>>,
+    faces: Vec<Vec<Vec<usize>>>,
 }
 
 impl Model {
@@ -19,7 +19,7 @@ impl Model {
         let mut verts: Vec<Vec3f> = Vec::new();
         let mut uvs: Vec<Vec2f> = Vec::new();
         let mut normals: Vec<Vec3f> = Vec::new();
-        let mut faces: Vec<Vec<usize>> = Vec::new();
+        let mut faces: Vec<Vec<Vec<usize>>> = Vec::new();
 
         let Ok(file) = File::open(&Path::new(filename)) else {
             return Err("Failed to open file".to_string());
@@ -52,15 +52,14 @@ impl Model {
                     let mut face = Vec::new();
                     let parts = line[2..].split_whitespace();
                     for part in parts {
-                        let indices: Vec<&str> = part.split('/').collect();
-                        if indices.is_empty() {
-                            return Err(format!("No vertex index found in part: {}", part));
+                        let mut idxs = Vec::new();
+                        for idx in part.split('/') {
+                            match idx.parse::<usize>() {
+                                Ok(idx) => idxs.push(idx - 1), // OBJ index starts from 1
+                                Err(e) => return Err(e.to_string()),
+                            }
                         }
-                        if let Ok(v_idx) = indices[0].parse::<usize>() {
-                            face.push(v_idx - 1); // OBJ index starts from 1
-                        } else {
-                            return Err(format!("Failed to parse vertex index: {}", indices[0]));
-                        }
+                        face.push(idxs);
                     }
                     faces.push(face);
                 }
@@ -82,12 +81,22 @@ impl Model {
             };
         }
 
-        Ok(Model {
+        let model = Model {
             verts,
             uvs,
             normals,
             faces,
-        })
+        };
+
+        println!(
+            "Model loaded. verts: {}, uvs: {}, normals: {}, faces: {}",
+            model.verts.len(),
+            model.uvs.len(),
+            model.normals.len(),
+            model.faces.len()
+        );
+
+        Ok(model)
     }
 
     #[allow(dead_code)]
@@ -103,7 +112,23 @@ impl Model {
         self.verts[idx]
     }
 
-    pub fn face(&self, idx: usize) -> &Vec<usize> {
+    pub fn face(&self, idx: usize) -> &Vec<Vec<usize>> {
         &self.faces[idx]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_model() {
+        let model = Model::new("tests/models/sample.obj").expect("Failed to load model.");
+
+        // In the object file form, 1/1/1/2/1 3/3/1, but since the index is subtracted by 1 when storing the data, the assertion is made with the value of 1 subtracted.
+        assert_eq!(
+            model.faces[0],
+            vec![vec![0, 0, 0], vec![1, 1, 0], vec![2, 2, 0]]
+        );
     }
 }

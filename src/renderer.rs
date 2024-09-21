@@ -37,8 +37,8 @@ impl Renderer {
         for i in 0..model.nfaces() {
             let face = model.face(i);
             for j in 0..3 {
-                let v0 = model.vert(face[j]);
-                let v1 = model.vert(face[(j + 1) % 3]);
+                let v0 = model.vert(face[j][0]);
+                let v1 = model.vert(face[(j + 1) % 3][0]);
                 let x0 = (v0.x + 1.0) * self.width as f32 / 2.0;
                 let y0 = (v0.y + 1.0) * self.height as f32 / 2.0;
                 let x1 = (v1.x + 1.0) * self.width as f32 / 2.0;
@@ -62,7 +62,7 @@ impl Renderer {
             let mut screen_coords = vec![Vec3i::new(0, 0, 0); 3];
             let mut world_coords = vec![Vec3f::new(0.0, 0.0, 0.0); 3];
             for j in 0..3 {
-                let v = model.vert(face[j]);
+                let v = model.vert(face[j][0]);
                 screen_coords[j] = Vec3i::new(
                     ((v.x + 1.0) * self.width as f32 / 2.0) as i32,
                     ((v.y + 1.0) * self.height as f32 / 2.0) as i32,
