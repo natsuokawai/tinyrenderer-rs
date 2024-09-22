@@ -63,7 +63,7 @@ where
     T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "({}, {})", self.x, self.y)
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 
@@ -144,6 +144,25 @@ impl Vec3<f32> {
         }
         self
     }
+
+    #[allow(dead_code)]
+    pub fn to_i(&self) -> Vec3<i32> {
+        Vec3 {
+            x: self.x as i32,
+            y: self.y as i32,
+            z: self.z as i32,
+        }
+    }
+}
+
+impl Vec3<i32> {
+    pub fn to_f(&self) -> Vec3<f32> {
+        Vec3 {
+            x: self.x as f32,
+            y: self.y as f32,
+            z: self.z as f32,
+        }
+    }
 }
 
 impl<T> Vec3<T>
@@ -175,7 +194,7 @@ where
     T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "({}, {}, {})", self.x, self.y, self.z)
+        write!(f, "({}, {}, {})", self.x, self.y, self.z)
     }
 }
 

@@ -112,6 +112,10 @@ impl Model {
         self.verts[idx]
     }
 
+    pub fn uv(&self, idx: usize) -> Vec2f {
+        self.uvs[idx]
+    }
+
     pub fn face(&self, idx: usize) -> &Vec<Vec<usize>> {
         &self.faces[idx]
     }
