@@ -203,3 +203,98 @@ pub type Vec2f = Vec2<f32>;
 pub type Vec2i = Vec2<i32>;
 pub type Vec3f = Vec3<f32>;
 pub type Vec3i = Vec3<i32>;
+
+pub struct Matrix {
+    m: Vec<Vec<f32>>,
+    rows: usize,
+    cols: usize,
+}
+
+#[allow(dead_code)]
+impl Matrix {
+    fn new(r: usize, c: usize) -> Self {
+        Matrix {
+            m: vec![vec![0.0; c]; r],
+            rows: r,
+            cols: c,
+        }
+    }
+
+    fn identity(dimensions: usize) -> Self {
+        let mut e = Self::new(dimensions, dimensions);
+        for i in 0..e.rows {
+            for j in 0..e.cols {
+                if i == j {
+                    e.m[i][j] = 1.0;
+                }
+            }
+        }
+        e
+    }
+
+    fn nrows(&self) -> usize {
+        self.rows
+    }
+
+    fn ncols(&self) -> usize {
+        self.cols
+    }
+
+    fn transpose(&self) -> Self {
+        let mut t = Matrix::new(self.cols, self.rows);
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                t.m[j][i] = self.m[i][j];
+            }
+        }
+        t
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn approx_eq(l: &Matrix, r: &Matrix) -> bool {
+        if l.rows != r.rows || l.cols != r.cols {
+            return false;
+        }
+
+        for i in 0..l.rows {
+            for j in 0..l.cols {
+                if (l.m[i][j] - r.m[i][j]).abs() > f32::EPSILON {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[test]
+    fn test_identity() {
+        assert!(approx_eq(
+            &Matrix::identity(2),
+            &Matrix {
+                m: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
+                rows: 2,
+                cols: 2
+            }
+        ));
+    }
+
+    #[test]
+    fn test_transpose() {
+        let m = Matrix {
+            m: vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]],
+            rows: 2,
+            cols: 3,
+        };
+        let mt = Matrix {
+            m: vec![vec![1.0, 4.0], vec![2.0, 5.0], vec![3.0, 6.0]],
+            rows: 3,
+            cols: 2,
+        };
+        assert!(approx_eq(&m.transpose(), &mt));
+    }
+}
