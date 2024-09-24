@@ -212,7 +212,7 @@ pub struct Matrix {
 
 #[allow(dead_code)]
 impl Matrix {
-    fn new(r: usize, c: usize) -> Self {
+    pub fn new(r: usize, c: usize) -> Self {
         Matrix {
             m: vec![vec![0.0; c]; r],
             rows: r,
@@ -220,7 +220,7 @@ impl Matrix {
         }
     }
 
-    fn identity(dimensions: usize) -> Self {
+    pub fn identity(dimensions: usize) -> Self {
         let mut e = Self::new(dimensions, dimensions);
         for i in 0..e.rows {
             for j in 0..e.cols {
@@ -232,15 +232,15 @@ impl Matrix {
         e
     }
 
-    fn nrows(&self) -> usize {
+    pub fn nrows(&self) -> usize {
         self.rows
     }
 
-    fn ncols(&self) -> usize {
+    pub fn ncols(&self) -> usize {
         self.cols
     }
 
-    fn transpose(&self) -> Self {
+    pub fn transpose(&self) -> Self {
         let mut t = Matrix::new(self.cols, self.rows);
         for i in 0..self.rows {
             for j in 0..self.cols {
@@ -250,33 +250,7 @@ impl Matrix {
         t
     }
 
-    fn lu_decompose(&self) -> (Matrix, Matrix) {
-        let n = self.rows;
-        let mut l = Matrix::identity(n);
-        let mut u = Matrix::new(n, n);
-
-        for i in 0..n {
-            for k in i..n {
-                let mut sum = 0.0;
-                for j in 0..i {
-                    sum += l[i][j] * u[j][k];
-                }
-                u[i][k] = self[i][k] - sum;
-            }
-
-            for k in i + 1..n {
-                let mut sum = 0.0;
-                for j in 0..i {
-                    sum += l[k][j] * u[j][i];
-                }
-                l[k][i] = (self[k][i] - sum) / u[i][i];
-            }
-        }
-
-        (l, u)
-    }
-
-    fn inverse(&self) -> Option<Self> {
+    pub fn inverse(&self) -> Option<Self> {
         if self.rows != self.cols {
             return None;
         }
@@ -312,6 +286,32 @@ impl Matrix {
         }
 
         Some(inverse)
+    }
+
+    fn lu_decompose(&self) -> (Matrix, Matrix) {
+        let n = self.rows;
+        let mut l = Matrix::identity(n);
+        let mut u = Matrix::new(n, n);
+
+        for i in 0..n {
+            for k in i..n {
+                let mut sum = 0.0;
+                for j in 0..i {
+                    sum += l[i][j] * u[j][k];
+                }
+                u[i][k] = self[i][k] - sum;
+            }
+
+            for k in i + 1..n {
+                let mut sum = 0.0;
+                for j in 0..i {
+                    sum += l[k][j] * u[j][i];
+                }
+                l[k][i] = (self[k][i] - sum) / u[i][i];
+            }
+        }
+
+        (l, u)
     }
 }
 
