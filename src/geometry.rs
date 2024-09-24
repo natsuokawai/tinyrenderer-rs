@@ -250,6 +250,87 @@ impl Matrix {
         t
     }
 
+    fn lu_decompose(&self) -> (Matrix, Matrix) {
+        let n = self.rows;
+        let mut l = Matrix::identity(n);
+        let mut u = Matrix::new(n, n);
+
+        for i in 0..n {
+            for k in i..n {
+                let mut sum = 0.0;
+                for j in 0..i {
+                    sum += l[i][j] * u[j][k];
+                }
+                u[i][k] = self[i][k] - sum;
+            }
+
+            for k in i + 1..n {
+                let mut sum = 0.0;
+                for j in 0..i {
+                    sum += l[k][j] * u[j][i];
+                }
+                l[k][i] = (self[k][i] - sum) / u[i][i];
+            }
+        }
+
+        (l, u)
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        if self.rows != self.cols {
+            return None;
+        }
+
+        let n = self.rows;
+        let (l, u) = self.lu_decompose();
+        let mut inverse = Matrix::new(n, n);
+
+        for i in 0..n {
+            // step 1: solve L * y = e
+            let mut y = vec![0.0; n];
+            for j in 0..n {
+                let mut sum = 0.0;
+                for k in 0..j {
+                    sum += l[j][k] * y[k];
+                }
+                y[j] = if i == j { 1.0 } else { 0.0 } - sum;
+            }
+
+            // step 2: solve U * x = y
+            let mut x = vec![0.0; n];
+            for j in (0..n).rev() {
+                let mut sum = 0.0;
+                for k in j + 1..n {
+                    sum += u[j][k] * x[k];
+                }
+                x[j] = (y[j] - sum) / u[j][j];
+            }
+
+            for j in 0..n {
+                inverse[j][i] = x[j];
+            }
+        }
+
+        Some(inverse)
+    }
+}
+
+impl fmt::Display for Matrix {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let mut s = String::new();
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                s.push_str(&format!("{:.2} ", self[i][j]));
+                if j < self.cols - 1 {
+                    s.push_str("\t");
+                }
+            }
+            s.push('\n');
+        }
+        write!(f, "{}", s)
+    }
+}
+
 impl Index<usize> for Matrix {
     type Output = Vec<f32>;
 
@@ -309,5 +390,31 @@ mod tests {
             cols: 2,
         };
         assert!(approx_eq(&m.transpose(), &mt));
+    }
+
+    #[test]
+    fn test_inverse() {
+        let m = Matrix {
+            m: vec![
+                vec![1.0, 1.0, -1.0],
+                vec![-2.0, 0.0, 1.0],
+                vec![0.0, 2.0, 1.0],
+            ],
+            rows: 3,
+            cols: 3,
+        };
+        let mi = Matrix {
+            m: vec![
+                vec![-0.5, -0.75, 0.25],
+                vec![0.5, 0.25, 0.25],
+                vec![-1.0, -0.5, 0.5],
+            ],
+            rows: 3,
+            cols: 3,
+        };
+        assert!(match m.inverse() {
+            Some(m_inverse) => approx_eq(&m_inverse, &mi),
+            None => false,
+        });
     }
 }
