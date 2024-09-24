@@ -1,5 +1,5 @@
-use std::fmt;
-use std::ops::{Add, Mul, Sub};
+use std::fmt::{self, Formatter};
+use std::ops::{Add, Index, IndexMut, Mul, Sub};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec2<T> {
@@ -225,7 +225,7 @@ impl Matrix {
         for i in 0..e.rows {
             for j in 0..e.cols {
                 if i == j {
-                    e.m[i][j] = 1.0;
+                    e[i][j] = 1.0;
                 }
             }
         }
@@ -244,10 +244,23 @@ impl Matrix {
         let mut t = Matrix::new(self.cols, self.rows);
         for i in 0..self.rows {
             for j in 0..self.cols {
-                t.m[j][i] = self.m[i][j];
+                t[j][i] = self[i][j];
             }
         }
         t
+    }
+
+impl Index<usize> for Matrix {
+    type Output = Vec<f32>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.m[index]
+    }
+}
+
+impl IndexMut<usize> for Matrix {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.m[index]
     }
 }
 
@@ -262,7 +275,7 @@ mod tests {
 
         for i in 0..l.rows {
             for j in 0..l.cols {
-                if (l.m[i][j] - r.m[i][j]).abs() > f32::EPSILON {
+                if (l[i][j] - r[i][j]).abs() > f32::EPSILON {
                     return false;
                 }
             }
