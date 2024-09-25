@@ -345,6 +345,24 @@ impl IndexMut<usize> for Matrix {
     }
 }
 
+impl Mul for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut res = Self::new(self.rows, rhs.cols);
+
+        for i in 0..self.rows {
+            for k in 0..rhs.cols {
+                for j in 0..self.cols {
+                    res[i][k] += self[i][j] * rhs[j][k];
+                }
+            }
+        }
+
+        res
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,6 +408,30 @@ mod tests {
             cols: 2,
         };
         assert!(approx_eq(&m.transpose(), &mt));
+    }
+
+    #[test]
+    fn test_mul() {
+        let a = Matrix {
+            m: vec![vec![1.0, 2.0], vec![3.0, 1.0], vec![3.0, 2.0]],
+            rows: 3,
+            cols: 2,
+        };
+        let b = Matrix {
+            m: vec![vec![1.0, 3.0, 5.0], vec![2.0, 4.0, 1.0]],
+            rows: 2,
+            cols: 3,
+        };
+        let c = Matrix {
+            m: vec![
+                vec![5.0, 11.0, 7.0],
+                vec![5.0, 13.0, 16.0],
+                vec![7.0, 17.0, 17.0],
+            ],
+            rows: 3,
+            cols: 3,
+        };
+        assert!(approx_eq(&(a * b), &c));
     }
 
     #[test]
