@@ -31,26 +31,7 @@ impl Renderer {
         self.image.write_tga_file(filename, true)
     }
 
-    pub fn render_model(&mut self, model: &crate::model::Model) {
-        let white = TGAColor::rgba(255, 255, 255, 255);
-
-        for i in 0..model.nfaces() {
-            let face = model.face(i);
-            for j in 0..3 {
-                let v0 = model.vert(face[j][0]);
-                let v1 = model.vert(face[(j + 1) % 3][0]);
-                let x0 = (v0.x + 1.0) * self.width as f32 / 2.0;
-                let y0 = (v0.y + 1.0) * self.height as f32 / 2.0;
-                let x1 = (v1.x + 1.0) * self.width as f32 / 2.0;
-                let y1 = (v1.y + 1.0) * self.height as f32 / 2.0;
-                let t0 = Vec2i::new(x0 as i32, y0 as i32);
-                let t1 = Vec2i::new(x1 as i32, y1 as i32);
-                self.draw_line(t0, t1, &white, OptimizationLevel::Level0);
-            }
-        }
-    }
-
-    pub fn render_model2(
+    pub fn render_model(
         &mut self,
         model: &crate::model::Model,
         texture_image: &TGAImage,
@@ -205,6 +186,7 @@ impl Renderer {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn draw_line(
         &mut self,
         t0: Vec2i,

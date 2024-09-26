@@ -19,15 +19,11 @@ fn main() {
     };
 
     let mut renderer = Renderer::new(width, height);
-    renderer.render_model(&model);
-    renderer.save_tga_image("output.tga").unwrap();
-
-    let mut renderer2 = Renderer::new(width, height);
     let mut texture_image = TGAImage::new(0, 0, Format::RGB);
     texture_image
         .read_tga_file("src/texture/african_head_diffuse.tga")
         .expect("Failed to load texture image");
     texture_image.flip_vertically();
-    renderer2.render_model2(&model, &texture_image).unwrap();
-    renderer2.save_tga_image("output2.tga").unwrap();
+    renderer.render_model(&model, &texture_image).unwrap();
+    renderer.save_tga_image("output.tga").unwrap();
 }
