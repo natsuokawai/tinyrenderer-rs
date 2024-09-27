@@ -232,6 +232,12 @@ impl Matrix {
         e
     }
 
+    pub fn projection(z: f32) -> Self {
+        let mut mat = Matrix::identity(4);
+        mat[3][2] = -1.0 / z;
+        mat
+    }
+
     pub fn nrows(&self) -> usize {
         self.rows
     }
