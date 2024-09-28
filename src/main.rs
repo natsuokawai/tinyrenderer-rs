@@ -24,6 +24,8 @@ fn main() {
         .read_tga_file("src/texture/african_head_diffuse.tga")
         .expect("Failed to load texture image");
     texture_image.flip_vertically();
-    renderer.render_model(&model, &texture_image).unwrap();
+    renderer
+        .render_model_with_camera(&model, &texture_image)
+        .unwrap();
     renderer.save_tga_image("output.tga").unwrap();
 }

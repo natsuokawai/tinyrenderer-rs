@@ -1,5 +1,5 @@
 use crate::{
-    geometry::{Vec2f, Vec2i, Vec3f, Vec3i},
+    geometry::{Matrix, Vec2f, Vec2i, Vec3f, Vec3i},
     tgaimage::{Format, TGAColor, TGAImage},
 };
 
@@ -31,6 +31,7 @@ impl Renderer {
         self.image.write_tga_file(filename, true)
     }
 
+    #[allow(dead_code)]
     pub fn render_model(
         &mut self,
         model: &crate::model::Model,
@@ -77,6 +78,77 @@ impl Renderer {
         }
 
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn render_model_with_camera(
+        &mut self,
+        model: &crate::model::Model,
+        texture_image: &TGAImage,
+    ) -> Result<(), String> {
+        let light_dir = Vec3f::new(0.0, 0.0, -1.0);
+        let mut zbuffer = vec![
+            vec![i32::min_value(); self.image.width as usize + 1];
+            self.image.height as usize + 1
+        ];
+
+        let camera = Vec3f::new(0.0, 0.0, 3.0);
+        let viewport = Self::viewport(
+            self.width / 8,
+            self.height / 8,
+            self.width * 3 / 4,
+            self.height * 3 / 4,
+        );
+        let projection = Matrix::projection(camera.z);
+
+        for i in 0..model.nfaces() {
+            let face = model.face(i);
+            let mut screen_coords = vec![Vec3i::new(0, 0, 0); 3];
+            let mut world_coords = vec![Vec3f::new(0.0, 0.0, 0.0); 3];
+            let mut texture_coords = vec![Vec2f::new(0.0, 0.0); 3];
+            for j in 0..3 {
+                let v = model.vert(face[j][0]);
+                screen_coords[j] = (viewport.clone() * projection.clone() * v.to_mat())
+                    .to_vec()
+                    .to_i();
+                texture_coords[j] = model.uv(face[j][1]);
+                world_coords[j] = v;
+            }
+            let mut n =
+                (world_coords[2] - world_coords[0]).cross(world_coords[1] - world_coords[0]);
+            n.normalize(1.0);
+            let intensity = n.dot(light_dir);
+            if intensity > 0.0 {
+                self.draw_triangle(
+                    screen_coords[0],
+                    screen_coords[1],
+                    screen_coords[2],
+                    texture_coords[0],
+                    texture_coords[1],
+                    texture_coords[2],
+                    texture_image,
+                    intensity,
+                    &mut zbuffer,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn viewport(x: i32, y: i32, w: i32, h: i32) -> Matrix {
+        let depth = 255;
+
+        let mut m = Matrix::identity(4);
+        m[0][3] = (x + w) as f32 / 2.0;
+        m[1][3] = (y + h) as f32 / 2.0;
+        m[2][3] = depth as f32 / 2.0;
+
+        m[0][0] = w as f32 / 2.0;
+        m[1][1] = h as f32 / 2.0;
+        m[2][2] = depth as f32 / 2.0;
+
+        m
     }
 
     fn draw_triangle(
