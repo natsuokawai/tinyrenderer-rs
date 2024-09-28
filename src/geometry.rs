@@ -153,6 +153,15 @@ impl Vec3<f32> {
             z: self.z as i32,
         }
     }
+
+    pub fn to_mat(&self) -> Matrix {
+        let mut m = Matrix::new(4, 1);
+        m[0][0] = self.x;
+        m[1][0] = self.y;
+        m[2][0] = self.z;
+        m[3][0] = 1.0;
+        m
+    }
 }
 
 impl Vec3<i32> {
@@ -204,6 +213,7 @@ pub type Vec2i = Vec2<i32>;
 pub type Vec3f = Vec3<f32>;
 pub type Vec3i = Vec3<i32>;
 
+#[derive(Debug, Clone)]
 pub struct Matrix {
     m: Vec<Vec<f32>>,
     rows: usize,
@@ -236,6 +246,19 @@ impl Matrix {
         let mut mat = Matrix::identity(4);
         mat[3][2] = -1.0 / z;
         mat
+    }
+
+    pub fn from_vec(v: Vec<Vec<f32>>) -> Self {
+        assert!(v.len() >= 1);
+
+        let first_row_len = v[0].len();
+        assert!(v.iter().all(|r| r.len() == first_row_len));
+
+        Matrix {
+            rows: v.len(),
+            cols: v[0].len(),
+            m: v,
+        }
     }
 
     pub fn nrows(&self) -> usize {
@@ -318,6 +341,14 @@ impl Matrix {
         }
 
         (l, u)
+    }
+
+    pub fn to_vec(&self) -> Vec3f {
+        Vec3f::new(
+            self[0][0] / self[3][0],
+            self[1][0] / self[3][0],
+            self[2][0] / self[3][0],
+        )
     }
 }
 
