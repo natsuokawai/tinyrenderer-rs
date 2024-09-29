@@ -133,16 +133,13 @@ impl Vec3<f32> {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    #[allow(dead_code)]
-    pub fn normalize(&mut self, l: f32) -> &Self {
+    pub fn normalize(&self, l: f32) -> Self {
         let length = self.norm();
-        if length != 0.0 {
-            let factor = l / length;
-            self.x *= factor;
-            self.y *= factor;
-            self.z *= factor;
+        if length == 0.0 {
+            return self.clone();
         }
-        self
+        let factor = l / length;
+        Vec3f::new(self.x * factor, self.y * factor, self.z * factor)
     }
 
     #[allow(dead_code)]

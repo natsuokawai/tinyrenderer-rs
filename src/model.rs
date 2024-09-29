@@ -116,6 +116,10 @@ impl Model {
         self.uvs[idx]
     }
 
+    pub fn normal(&self, idx: usize) -> Vec3f {
+        self.normals[idx]
+    }
+
     pub fn face(&self, idx: usize) -> &Vec<Vec<usize>> {
         &self.faces[idx]
     }
