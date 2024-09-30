@@ -60,7 +60,7 @@ impl Renderer {
             }
             let mut n =
                 (world_coords[2] - world_coords[0]).cross(world_coords[1] - world_coords[0]);
-            n.normalize(1.0);
+            n = n.normalize(1.0);
             let intensity = n.dot(light_dir);
             if intensity > 0.0 {
                 self.draw_triangle(
@@ -81,17 +81,11 @@ impl Renderer {
     }
 
     #[allow(dead_code)]
-    pub fn render_model_with_camera(
-        &mut self,
-        model: &crate::model::Model,
-        texture_image: &TGAImage,
-    ) -> Result<(), String> {
-        let light_dir = Vec3f::new(0.0, 0.0, -1.0);
-        let mut zbuffer = vec![
-            vec![i32::min_value(); self.image.width as usize + 1];
-            self.image.height as usize + 1
-        ];
-
+    pub fn render_model_with_camera(&mut self, model: &crate::model::Model) -> Result<(), String> {
+        let light_dir = Vec3f::new(1.0, -1.0, 1.0).normalize(1.0);
+        let eye = Vec3f::new(3.0, 1.0, 3.0);
+        let center = Vec3f::new(0.0, 0.0, 0.0);
+        let model_view = Self::lookat(eye, center, Vec3f::new(0.0, 1.0, 0.0));
         let camera = Vec3f::new(0.0, 0.0, 3.0);
         let viewport = Self::viewport(
             self.width / 8,
@@ -101,39 +95,50 @@ impl Renderer {
         );
         let projection = Matrix::projection(camera.z);
 
+        let mut zbuffer = vec![
+            vec![i32::min_value(); self.image.width as usize + 1];
+            self.image.height as usize + 1
+        ];
+
         for i in 0..model.nfaces() {
             let face = model.face(i);
             let mut screen_coords = vec![Vec3i::new(0, 0, 0); 3];
             let mut world_coords = vec![Vec3f::new(0.0, 0.0, 0.0); 3];
-            let mut texture_coords = vec![Vec2f::new(0.0, 0.0); 3];
+            let mut normals = vec![0.0 as f32; 3];
             for j in 0..3 {
                 let v = model.vert(face[j][0]);
-                screen_coords[j] = (viewport.clone() * projection.clone() * v.to_mat())
-                    .to_vec()
-                    .to_i();
-                texture_coords[j] = model.uv(face[j][1]);
+                screen_coords[j] =
+                    (viewport.clone() * projection.clone() * model_view.clone() * v.to_mat())
+                        .to_vec()
+                        .to_i();
+                normals[j] = model.normal(face[j][2]).normalize(1.0).dot(light_dir);
                 world_coords[j] = v;
             }
-            let mut n =
-                (world_coords[2] - world_coords[0]).cross(world_coords[1] - world_coords[0]);
-            n.normalize(1.0);
-            let intensity = n.dot(light_dir);
-            if intensity > 0.0 {
-                self.draw_triangle(
-                    screen_coords[0],
-                    screen_coords[1],
-                    screen_coords[2],
-                    texture_coords[0],
-                    texture_coords[1],
-                    texture_coords[2],
-                    texture_image,
-                    intensity,
-                    &mut zbuffer,
-                )?;
-            }
+            self.draw_triangle_with_normal(
+                screen_coords[0],
+                screen_coords[1],
+                screen_coords[2],
+                normals[0],
+                normals[1],
+                normals[2],
+                &mut zbuffer,
+            )?;
         }
 
         Ok(())
+    }
+
+    fn lookat(eye: Vec3f, center: Vec3f, up: Vec3f) -> Matrix {
+        let z = (eye - center).normalize(1.0);
+        let x = (up.cross(z)).normalize(1.0);
+        let y = (z.cross(x)).normalize(1.0);
+
+        Matrix::from_vec(vec![
+            vec![x.x, x.y, x.z, -center.x],
+            vec![y.x, y.y, y.z, -center.y],
+            vec![z.x, z.y, z.z, -center.z],
+            vec![0.0, 0.0, 0.0, 1.0],
+        ])
     }
 
     fn viewport(x: i32, y: i32, w: i32, h: i32) -> Matrix {
@@ -149,6 +154,98 @@ impl Renderer {
         m[2][2] = depth as f32 / 2.0;
 
         m
+    }
+
+    fn draw_triangle_with_normal(
+        &mut self,
+        mut t0: Vec3i,
+        mut t1: Vec3i,
+        mut t2: Vec3i,
+        mut ity0: f32,
+        mut ity1: f32,
+        mut ity2: f32,
+        zbuffer: &mut Vec<Vec<i32>>,
+    ) -> Result<(), String> {
+        if t0.y == t1.y && t0.y == t2.y {
+            // Degenerate triangle
+            return Ok(());
+        }
+
+        let image = &mut self.image;
+
+        // Sort the vertices by y-coordinate ascending (t0.y <= t1.y <= t2.y)
+        if t0.y > t1.y {
+            std::mem::swap(&mut t0, &mut t1);
+            std::mem::swap(&mut ity0, &mut ity1);
+        }
+        if t0.y > t2.y {
+            std::mem::swap(&mut t0, &mut t2);
+            std::mem::swap(&mut ity0, &mut ity2);
+        }
+        if t1.y > t2.y {
+            std::mem::swap(&mut t1, &mut t2);
+            std::mem::swap(&mut ity1, &mut ity2);
+        }
+
+        let total_height = t2.y - t0.y;
+        if total_height == 0 {
+            return Err("DivisionByZero".to_string());
+        }
+
+        for i in 0..total_height {
+            let second_half = i > t1.y - t0.y || t1.y == t0.y;
+            let segment_height = if second_half {
+                t2.y - t1.y
+            } else {
+                t1.y - t0.y
+            };
+            let alpha = i as f32 / total_height as f32;
+            let beta =
+                (i - if second_half { t1.y - t0.y } else { 0 }) as f32 / segment_height as f32;
+            let mut p_a = t0.to_f() + (t2.to_f() - t0.to_f()) * alpha;
+            let mut p_b = if second_half {
+                t1.to_f() + (t2.to_f() - t1.to_f()) * beta
+            } else {
+                t0.to_f() + (t1.to_f() - t0.to_f()) * beta
+            };
+            let mut ity_a = ity0 + (ity2 - ity0) * alpha;
+            let mut ity_b = if second_half {
+                ity1 + (ity2 - ity1) * beta
+            } else {
+                ity0 + (ity1 - ity0) * beta
+            };
+
+            if p_a.x > p_b.x {
+                std::mem::swap(&mut p_a, &mut p_b);
+                std::mem::swap(&mut ity_a, &mut ity_b);
+            }
+
+            for j in (p_a.x as i32)..=(p_b.x as i32) {
+                let phi = if p_b.x as i32 == p_a.x as i32 {
+                    1.0
+                } else {
+                    (j as f32 - p_a.x) / (p_b.x - p_a.x)
+                };
+                let p_cur = p_a + (p_b - p_a) * phi;
+                let ity_cur = ity_a + (ity_b - ity_a) * phi;
+
+                if zbuffer[p_cur.x as usize][p_cur.y as usize] < p_cur.z as i32 {
+                    zbuffer[p_cur.x as usize][p_cur.y as usize] = p_cur.z as i32;
+                    image.set(
+                        p_cur.x as i32,
+                        p_cur.y as i32,
+                        &TGAColor::rgba(
+                            (255.0 * ity_cur) as u8,
+                            (255.0 * ity_cur) as u8,
+                            (255.0 * ity_cur) as u8,
+                            255,
+                        ),
+                    );
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn draw_triangle(
